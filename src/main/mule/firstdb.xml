@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="9061d1bf-6edd-4fcf-a94b-ee60389c369e" >
+		<http:listener-connection host="0.0.0.0" port="8082" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="b024542d-5e74-4bb3-92ec-34ce00cccd05" >
+		<db:my-sql-connection host="localhost" port="3306" user="root" password="Welcome7" database="world" />
+	</db:config>
+	<flow name="firstdbFlow" doc:id="a40b9c00-8476-46d9-8939-eb9e69bca346" >
+		<http:listener doc:name="Listener" doc:id="37ce5ef1-b386-4c3f-b069-b790cbea1233" config-ref="HTTP_Listener_config" path="/firstdb" allowedMethods="GET">
+			<http:response statusCode="200" />
+		</http:listener>
+		<set-variable value="#[attributes.queryParams.countrycode default '']" doc:name="Set Variable" doc:id="58486ae9-8760-4f58-b39d-775e532859bf" variableName="countrycodevar"/>
+		<choice doc:name="Choice" doc:id="56ba4e4c-6a93-4cf7-a9e5-3fcf6300a483" >
+			<when expression="#[vars.countrycodevar !='']">
+				<db:select doc:name="Select" doc:id="9e8a8863-32e9-4e1d-a198-c318eeafa125" config-ref="Database_Config">
+					<db:sql >Select * from city where countrycode=:countryode</db:sql>
+					<db:input-parameters ><![CDATA[#[{'countrycode' :vars.countrycodevar}]]]></db:input-parameters>
+				</db:select>
+			</when>
+			<otherwise >
+				<db:select doc:name="Selecct quries" doc:id="457091ad-5c77-4b42-9a29-537523968c5f" config-ref="Database_Config">
+			<db:sql>Select  *  from city where countrycode=:countrycode</db:sql>
+					<db:input-parameters ><![CDATA[#[{
+	'countrycode' :vars.countrycodevar
+}]]]></db:input-parameters>
+		</db:select>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="79430b40-b8fa-46fa-b4c5-45e016dc2ee5" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="b39f2b6c-4dfa-4db1-ab03-73322f8d6a06" message="#[payload]"/>
+	</flow>
+</mule>
